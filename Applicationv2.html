@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	
+	<title>Study Abroad Allocation</title>
+	<link rel="icon" type="image/png" href="./css/world.png">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="js/jquery.3.3.1.min.js">\x3C/script>')</script> <!--offline fallback-->
+	
+	<script src="./js/jquery.csv.min.js"></script>
+	<script src="./js/app-main.js"></script>
+	<script src="./js/ui-controls.js"></script>	
+	<script src="./js/error-constants.js"></script>
+	<script src="./js/pre-processor.js"></script>
+	<script src="./js/data-export.js"></script>
+	<script src="./js/allocations.js"></script>
+	<script src="./js/matrix-vis.js"></script>
+	<script src="./js/testCases.js"></script>
+	
+	<link rel="stylesheet" type="text/css" href="./css/Glyphter.css">
+	<link rel="stylesheet" type="text/css" href="./css/material.css">
+	
+</head>
+
+<body>
+	<div id="toaster" class="modal-main">
+		<!-- Modal content -->
+		 <div class="modal-main-container">
+			<div class="modal-msg-container">
+				<p class="modal-msg" id="toasterMsg">
+					This application has experienced an error and has not loaded properly.<br>
+					It is unlikely to work properly. Do you want to reload?
+				</p>
+			</div>
+			<div class="modal-btn-container" id="modal-buttons">
+				<button class="modal-btn" id="choiceYes" onclick="location.reload();">Yes</button>
+				<button class="modal-btn" id="choiceNo"  onclick="alert('set your own attribute here');">No</button>
+				<button class="modal-btn" id="choiceOK" onclick="$('#toaster').hide();">OK</button>
+			</div>
+		</div>
+	</div> 
+	<div id="results-modal" class="modal-main">
+		<!-- Modal content -->
+		 <div id="results-wrapper" class="modal-main-container">
+			<!--Results go here-->
+		</div>
+	</div>	
+<div id="site" class="main-wrapper">
+	<div class="main-header">
+		<h2>Study Abroad Allocation System v<span id="appver">1.0</span></h2>
+	</div>
+	<div class="main-content">
+		<div class="nav-left">
+			<div class="nav-tile nav-tile-active" id="tile-home">
+				<span class="icon-span">A</span><br>
+				<span class="tile-text">Home</span>
+			</div>
+			<div class="nav-tile" id="tile-host-inst">
+				<span class="icon-span">B</span><br>
+				<span class="tile-text">Partners</span>
+				<div id="sub-tile-group-host-inst" class="sub-tile-group">
+					<div class="sub-tile sub-tile-inactive" id="tile-balances">
+						<span class="icon-span">M</span><br>
+						<span class="tile-text">Balances</span>
+					</div>
+					<div class="sub-tile sub-tile-inactive" id="tile-lu-ranks">
+						<span class="icon-span">C</span><br>
+						<span class="tile-text">LU Ranks</span>
+					</div>
+					<div class="sub-tile sub-tile-inactive" id="tile-host-inst-matrix">
+						<span class="icon-span">D</span><br>
+						<span class="tile-text">Matrices</span>
+					</div>
+					<div class="sub-tile sub-tile-inactive" id="tile-host-inst-export">
+						<span class="icon-span">E</span><br>
+						<span class="tile-text">Export</span>
+					</div>
+				</div>
+			</div>
+			<div class="nav-tile" id="tile-students">
+				<span class="icon-span">F</span><br>
+				<span class="tile-text">Students</span>
+				<div id="sub-tile-group-students" class="sub-tile-group">
+					<div class="sub-tile sub-tile-inactive" id="tile-moveon">
+						<span class="icon-span">G</span><br>
+						<span class="tile-text">MoveOn</span>
+					</div>
+					<div class="sub-tile sub-tile-inactive" id="tile-lusi">
+						<span class="icon-span">H</span><br>
+						<span class="tile-text">LUSI</span>
+					</div>
+					<div class="sub-tile sub-tile-inactive" id="tile-students-export">
+						<span class="icon-span">E</span><br>
+						<span class="tile-text">Export</span>
+					</div>
+				</div>
+			</div>	
+			<div class="nav-tile" id="tile-allocations">
+				<span class="icon-span">I</span><br>
+				<span class="tile-text">Allocations</span>
+				<div id="sub-tile-group-allocations" class="sub-tile-group">
+					<div class="sub-tile sub-tile-inactive" id="tile-generate-new">
+						<span class="icon-span">J</span><br>
+						<span class="tile-text">Generate</span>
+					</div>
+					<div class="sub-tile sub-tile-inactive" id="tile-alloc-output">
+						<span class="icon-span">K</span><br>
+						<span class="tile-text">View</span>
+					</div>
+					<div class="sub-tile sub-tile-inactive" id="tile-allocation-export">
+						<span class="icon-span">E</span><br>
+						<span class="tile-text">Export</span>
+					</div>				
+					<div class="sub-tile sub-tile-inactive" id="tile-settings">
+						<span class="icon-span">L</span><br>
+						<span class="tile-text">Settings</span>
+					</div>
+				</div>
+			</div>				
+		</div>
+		<div class="app-main">
+			<div id="card-group-home" class="flex-wrapper purple">
+				<div class="card" id="card-home">
+					<div class="card-content">
+						<p class="card-title">Home</p>	
+						<p class="card-text">
+							Allocations require four sets of data to be uploaded.<br>
+							Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="home-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="home-tick-lu-ranks">&#10004;</span>]<br>
+							<span class="text-checklist">3. Students' Stay Wishes  </span>[<span class="text-tick text-tick-hide" id="home-tick-moveon">&#10004;</span>]<br>
+							<span class="text-checklist">4. LUSI Student Information  </span>[<span class="text-tick text-tick-hide" id="home-tick-lusi">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-home">
+						<div class="button-tile" id="button-tile-host-inst">
+							<span class="icon-span">B</span><br>
+							<span class="button-title">Partner Institutions</span><br>
+							<span class="button-text">Upload data, view and export matrices</span>
+						</div>
+						<div class="button-tile" id="button-tile-students">
+							<span class="icon-span">F</span><br>
+							<span class="button-title">Students</span><br>
+							<span class="button-text">Upload stay wishes, LUSI info and export data</span>
+						</div>
+						<div class="button-tile" id="button-tile-allocations">
+							<span class="icon-span">I</span><br>
+							<span class="button-title">Allocations</span><br>
+							<span class="button-text">Perform, view, export student allocations</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="card-group-host-inst" class="flex-wrapper brown">
+				<div class="card" id="card-host-inst">
+					<div class="card-content">
+						<p class="card-title">Partner Institutions</p>	
+						<p class="card-text">
+							Partner institutions and their current balances for stay places can be viewed as partner matrices or department matrices.
+							They are also needed to perform the allocations. <br>
+							LU Departments' preferences for partner institutions are also needed for allocation.
+							<br>Available:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick" id="host-inst-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="host-inst-tick-lu-ranks">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-host-inst-1">
+						<div class="button-tile" id="button-tile-balances">
+							<span class="icon-span">M</span><br>
+							<span class="button-title">Balances</span><br>
+							<span class="button-text">Upload the partner balances</span>
+						</div>
+						<div class="button-tile" id="button-tile-lu-ranks">
+							<span class="icon-span">C</span><br>
+							<span class="button-title">Department Preferences</span><br>
+							<span class="button-text">Upload department preferences</span>
+						</div>
+						<div class="button-tile" id="button-tile-partner-merged">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged</span><br>
+							<span class="button-text">Upload previously exported data</span>
+						</div>
+					</div>
+					<div class="sub-card" id="sub-card-host-inst-2">
+						<div class="button-tile button-tile-fixed" id="button-tile-host-inst-matrix">
+							<span class="icon-span">D</span><br>
+							<span class="button-title">Matrices</span><br>
+							<span class="button-text">View matrices <br>(Requires data upload first)</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="button-tile-host-inst-export">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">Export</span><br>
+							<span class="button-text">Export partner data for future use</span>
+						</div>
+					</div>
+				</div>
+				<div class="card" id="card-balances">
+					<div class="card-content">
+						<p class="card-title">Partner Institution Balances</p>	
+						<p class="card-text">
+							Partner institution balances indicate the number of stay places available at the 
+							partner institution.Each stay place is for a semester only.<br> Departments at partner institutions may have their own quotas.
+							<br>Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick" id="balances-tick-host-inst">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-balances">
+						<div class="button-tile button-tile-fixed" id="button-tile-balances-upload">
+							<span class="icon-span">M</span><br>
+							<span class="button-title">Balances</span><br>
+							<span class="button-text">Upload the partner balances</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="bal-button-tile-partner-merged">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged</span><br>
+							<span class="button-text">Upload previously exported data</span>
+						</div>
+					</div>
+					<input id="fs-balances-upload" type="file" name="files[]" accept=".csv" class="fs-hidden"></input>
+				</div>
+				<div class="card" id="card-lu-ranks">
+					<div class="card-content">
+						<p class="card-title">LU Department Rankings</p>	
+						<p class="card-text">
+							LU Departments vett the partner institution for curriculum match.<br>Department YA Advisors also rank locations by preferences.
+							<br>Required:<br>
+							<span class="text-checklist">1. LU Department Rankings </span>[<span class="text-tick" id="lu-ranks-tick-lu-ranks">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-lu-ranks">
+						<div class="button-tile button-tile-fixed" id="button-tile-lu-ranks-upload">
+							<span class="icon-span">C</span><br>
+							<span class="button-title">LU Ranks</span><br>
+							<span class="button-text">Upload the LU Dept preferences</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="lur-button-tile-partner-merged">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged</span><br>
+							<span class="button-text">Upload previously exported data</span>
+						</div>
+					</div>
+					<input id="fs-lu-rank-upload" type="file" name="files[]" accept=".csv" class="fs-hidden"></input>
+				</div>				
+				<div class="card" id="card-partner-merged">
+					<div class="card-content">
+						<p class="card-title">Merged Upload</p>	
+						<p class="card-text">
+							If data was exported during a previous run, it can be used instead of uploading the partner balances and LU rankings separately.
+							<br>Available:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="partner-merged-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="partner-merged-tick-lu-ranks">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-partner-merged">
+						<div class="button-tile" id="himerged-button-tile-himerged-upload">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged File Upload</span><br>
+							<span class="button-text">Upload a previously exported JSON file</span>
+						</div>
+						<div class="button-tile" id="himerged-button-tile-balances">
+							<span class="icon-span">M</span><br>
+							<span class="button-title">Partners Balances</span><br>
+							<span class="button-text">Upload partner balances separately</span>
+						</div>
+						<div class="button-tile" id="himerged-button-tile-lu-ranks">
+							<span class="icon-span">C</span><br>
+							<span class="button-title">Department Preferences</span><br>
+							<span class="button-text">Upload LU department preferences separately</span>
+						</div>
+					</div>
+					<input id="fs-balances-merged" type="file" name="files[]" accept=".json" class="fs-hidden"></input>
+				</div>
+				<div class="card" id="card-host-inst-matrix">
+					<div class="card-content">
+						<p class="card-title">Matrices</p>	
+						<p class="card-text">
+							Partner institution balances and LU department preferences can be viewed as forward matrix and reverse matrix once data is available.<br>These can also be downloaded for future reference.<br>Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="host-inst-matrix-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="host-inst-matrix-tick-lu-ranks">&#10004;</span>]<br>
+							Merged data (partners and LU departments) can also be downloaded for future use.
+							<br><br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-matrix-1">
+						<div class="button-tile" id="button-tile-matrix-forward">
+							<span class="icon-span">D</span><br>
+							<span class="button-title">Forward Matrix</span><br>
+							<span class="button-text">View partners by location and department</span>
+						</div>
+						<div class="button-tile" id="button-tile-matrix-reverse">
+							<span class="icon-span">D</span><br>
+							<span class="button-title">Reverse Matrix</span><br>
+							<span class="button-text">View departments by partners</span>
+						</div>
+						<div class="button-tile" id="mats-button-tile-host-inst-export">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">Export</span><br>
+							<span class="button-text">Export views or data</span>
+						</div>
+					</div>
+					<div class="sub-card" id="sub-card-matrix-2">
+						<div class="button-tile button-tile-fixed" id="matrix-button-tile-students">
+							<span class="icon-span">F</span><br>
+							<span class="button-title">Students</span><br>
+							<span class="button-text">Upload stay wishes, LUSI info and export data</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="matrix-button-tile-allocations">
+							<span class="icon-span">I</span><br>
+							<span class="button-title">Allocations</span><br>
+							<span class="button-text">Perform, view, export student allocations</span>
+						</div>
+					</div>					
+				</div>	
+				<div class="card" id="card-matrix-forward">
+					<div class="card-content">
+						<p class="card-title">Forward Matrix</p>	
+						<p class="card-text">
+							Data can be viewed here<br>Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="matrix-forward-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="matrix-forward-tick-lu-ranks">&#10004;</span>]<br>
+							Merged data (combining partners and LU departments) can also be downloaded for future use.
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-matrix-forward-1">
+						<div class="button-tile" id="button-tile-view-matrix-forward">
+							<span class="icon-span">O</span><br>
+							<span class="button-title">Explore</span><br>
+							<span class="button-text">Pops up in a new window</span>
+						</div>
+						<div class="button-tile" id="matfwd-button-tile-matrix-reverse">
+							<span class="icon-span">D</span><br>
+							<span class="button-title">Reverse Matrix</span><br>
+							<span class="button-text">View departments by partners</span>
+						</div>
+						<div class="button-tile" id="matfwd-button-tile-host-inst-export">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">Export</span><br>
+							<span class="button-text">Export views or data</span>
+						</div>
+					</div>
+					<div class="sub-card" id="sub-card-matrix-forward-2">
+						<div class="graph-tile" id="matrix-forward-graph-tile">
+							<span class="icon-span">F</span><br>
+							<span class="button-title">TBD</span><br>
+							<span class="button-text">Visualize matrix here with cropped content</span>
+						</div>
+					</div>					
+				</div>	
+				<div class="card" id="card-matrix-reverse">
+					<div class="card-content">
+						<p class="card-title">Reverse Matrix</p>	
+						<p class="card-text">
+							Data can be viewed here<br>Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="matrix-reverse-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="matrix-reverse-tick-lu-ranks">&#10004;</span>]<br>
+							Merged data (combining partners and LU departments) can also be downloaded for future use.
+							<br><br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-matrix-reverse-1">
+						<div class="button-tile" id="matrev-button-tile-matrix-forward">
+							<span class="icon-span">D</span><br>
+							<span class="button-title">Forward Matrix</span><br>
+							<span class="button-text">View partners by location</span>
+						</div>
+						<div class="button-tile" id="button-tile-view-matrix-reverse">
+							<span class="icon-span">O</span><br>
+							<span class="button-title">Explore</span><br>
+							<span class="button-text">Pops up in a new window</span>
+						</div>
+						<div class="button-tile" id="matrev-button-tile-host-inst-export">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">Export</span><br>
+							<span class="button-text">Export views or data</span>
+						</div>
+					</div>
+					<div class="sub-card" id="sub-card-matrix-reverse-2">
+						<div class="graph-tile" id="matrix-forward-graph-tile">
+							<span class="icon-span">F</span><br>
+							<span class="button-title">TBD</span><br>
+							<span class="button-text">Visualize matrix here with cropped content</span>
+						</div>
+					</div>					
+				</div>				
+				<div class="card" id="card-host-inst-export">
+					<div class="card-content">
+						<p class="card-title">Export</p>	
+						<p class="card-text">
+							Export the merged data-set containing partner balances and LU department rankings for future use as a 'JSON' file.<br>Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="host-inst-export-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="host-inst-export-tick-lu-ranks">&#10004;</span>]<br>
+							CSV versions of the Matrices can also be downloaded for using in Excel.<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-host-inst-export-1">
+						<div class="button-tile" id="button-tile-export-hi-json">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">JSON Export</span><br>
+							<span class="button-text">JSON file for future use</span>
+						</div>
+						<div class="button-tile" id="button-tile-export-matfwd">
+							<span class="icon-span">D</span><br>
+							<span class="button-title">Forward Matrix</span><br>
+							<span class="button-text">Download forward matrix as CSV</span>
+						</div>
+						<div class="button-tile" id="button-tile-export-matrev">
+							<span class="icon-span">D</span><br>
+							<span class="button-title">Reverse Matrix</span><br>
+							<span class="button-text">Download reverse matrix as CSV</span>
+						</div>
+					</div>
+					<div class="sub-card" id="sub-card-host-inst-export-2">
+						<div class="button-tile button-tile-fixed" id="hiexp-button-tile-students">
+							<span class="icon-span">F</span><br>
+							<span class="button-title">Students</span><br>
+							<span class="button-text">Upload stay wishes, LUSI info and export data</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="hiexp-button-tile-allocations">
+							<span class="icon-span">I</span><br>
+							<span class="button-title">Allocations</span><br>
+							<span class="button-text">Perform, view, export student allocations</span>
+						</div>
+					</div>	
+				</div>
+			</div>
+			<div id="card-group-students" class="flex-wrapper blue">
+				<div class="card" id="card-students">
+					<div class="card-content">
+						<p class="card-title">Student Information</p>	
+						<p class="card-text">
+							Student information includes their stay wishes collected through MoveOn and their grade/attendance data from LUSI. 
+							<br>Available:<br>
+							<span class="text-checklist-2">1. Student Stay Wishes (from MoveOn) </span>[<span class="text-tick" id="students-tick-moveon">&#10004;</span>]<br>
+							<span class="text-checklist-2">2. LUSI Grades and Attendance  </span>[<span class="text-tick text-tick-hide" id="students-tick-lusi">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-students-1">
+						<div class="button-tile" id="button-tile-moveon">
+							<span class="icon-span">G</span><br>
+							<span class="button-title">MoveOn Stay Wishes</span><br>
+							<span class="button-text">Upload students' stay wishes from MoveOn</span>
+						</div>
+						<div class="button-tile" id="button-tile-lusi">
+							<span class="icon-span">H</span><br>
+							<span class="button-title">LUSI Data</span><br>
+							<span class="button-text">Upload attendance and grades from LUSI</span>
+						</div>
+						<div class="button-tile" id="button-tile-students-merged">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged</span><br>
+							<span class="button-text">Upload previously exported data</span>
+						</div>
+					</div>
+					<div class="sub-card" id="sub-card-students-2">
+						<div class="button-tile button-tile-fixed" id="button-tile-students-export">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">Export</span><br>
+							<span class="button-text">Export data <br>(Requires data upload first)</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="students-button-tile-allocations">
+							<span class="icon-span">I</span><br>
+							<span class="button-title">Allocations</span><br>
+							<span class="button-text">Perform, view, export student allocations</span>
+						</div>
+					</div>
+				</div>
+				<div class="card" id="card-moveon">
+					<div class="card-content">
+						<p class="card-title">MoveOn Stay Wishes</p>	
+						<p class="card-text">
+							Students' stay wishes exported from MoveOn can be uploaded here.
+							<br>Required:<br>
+							<span class="text-checklist-2">1. Student Stay Wishes (from MoveOn) </span>[<span class="text-tick" id="moveon-tick-moveon">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-moveon">
+						<div class="button-tile button-tile-fixed" id="moveon-button-tile-moveon-upload">
+							<span class="icon-span">G</span><br>
+							<span class="button-title">MoveOn Stay Wishes</span><br>
+							<span class="button-text">Upload students' stay wishes from MoveOn</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="button-tile-students-merged">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged</span><br>
+							<span class="button-text">Upload previously exported data</span>
+						</div>
+					</div>
+					<input id="fs-moveon-upload" type="file" name="files[]" accept=".csv" class="fs-hidden"></input>
+				</div>
+				<div class="card" id="card-lusi">
+					<div class="card-content">
+						<p class="card-title">LUSI Information</p>	
+						<p class="card-text">
+							Use the export from LUSI to provide grades and attendance information about each student who has expressed stay wishes.
+							<br>Required:<br>
+							<span class="text-checklist-2">1. LUSI Grades and Attendance  </span>[<span class="text-tick text-tick-hide" id="lusi-tick-lusi">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-lusi">
+						<div class="button-tile button-tile-fixed" id="lusi-button-tile-lusi-upload">
+							<span class="icon-span">H</span><br>
+							<span class="button-title">LUSI Data</span><br>
+							<span class="button-text">Upload attendance and grades from LUSI</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="button-tile-students-merged">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged</span><br>
+							<span class="button-text">Upload previously exported data</span>
+						</div>
+					</div>
+					<input id="fs-lusi-upload" type="file" name="files[]" accept=".csv" class="fs-hidden"></input>
+				</div>
+				<div class="card" id="card-students-merged">
+					<div class="card-content">
+						<p class="card-title">Merged Information</p>	
+						<p class="card-text">
+							If data was exported during a previous run, it can be used instead of uploading the MoveOn export and LUSI grades and attendances separately. 
+							<br>Available:<br>
+							<span class="text-checklist-2">1. Student Stay Wishes (from MoveOn) </span>[<span class="text-tick" id="students-merged-tick-moveon">&#10004;</span>]<br>
+							<span class="text-checklist-2">2. LUSI Grades and Attendance  </span>[<span class="text-tick text-tick-hide" id="students-merged-tick-lusi">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-merged">
+						<div class="button-tile" id="merged-button-tile-moveondt-upload">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Merged</span><br>
+							<span class="button-text">Upload previously exported data</span>
+						</div>
+						<div class="button-tile" id="button-tile-moveon">
+							<span class="icon-span">G</span><br>
+							<span class="button-title">MoveOn Stay Wishes</span><br>
+							<span class="button-text">Upload students' stay wishes from MoveOn</span>
+						</div>
+						<div class="button-tile" id="button-tile-lusi">
+							<span class="icon-span">H</span><br>
+							<span class="button-title">LUSI Data</span><br>
+							<span class="button-text">Upload attendance and grades from LUSI</span>
+						</div>
+					</div>
+					<input id="fs-student-merged" type="file" name="files[]" accept=".json" class="fs-hidden"></input>
+				</div>						
+				<div class="card" id="card-students-export">
+					<div class="card-content">
+						<p class="card-title">Export</p>	
+						<p class="card-text">
+							Student data based on their stay wishes and LUSI-provided grades and attendance can be exported. The 'JSON' file export can be used later in place of the two separate files. 
+							The CSV export can be used to view the student information in Excel.
+							<br>Required:<br>
+							<span class="text-checklist-2">1. Student Stay Wishes (from MoveOn) </span>[<span class="text-tick" id="students-export-tick-moveon">&#10004;</span>]<br>
+							<span class="text-checklist-2">2. LUSI Grades and Attendance  </span>[<span class="text-tick text-tick-hide" id="students-export-tick-lusi">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-students-export">
+						<div class="button-tile button-tile-fixed" id="button-tile-export-st-json">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">JSON</span><br>
+							<span class="button-text">Export as JSON for future use</span>
+						</div>
+						<div class="button-tile button-tile-fixed" id="button-tile-export-st-csv">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">CSV</span><br>
+							<span class="button-text">Export to view as Excel</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="card-group-allocations" class="flex-wrapper green">
+				<div class="card" id="card-allocations">
+					<div class="card-content">
+						<p class="card-title">Allocations</p>	
+						<p class="card-text">
+							Student allocations can be performed once partner balances, department rankings, students' stay wishes and their grades/attendance are uploaded.
+							<br>Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="allocations-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="allocations-tick-lu-ranks">&#10004;</span>]<br>
+							<span class="text-checklist">3. Students' Stay Wishes  </span>[<span class="text-tick text-tick-hide" id="allocations-tick-moveon">&#10004;</span>]<br>
+							<span class="text-checklist">4. LUSI Student Information  </span>[<span class="text-tick text-tick-hide" id="allocations-tick-lusi">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-allocations-1">
+						<div class="button-tile" id="button-tile-generate-new">
+							<span class="icon-span">J</span><br>
+							<span class="button-title">Generate</span><br>
+							<span class="button-text">Generate allocations using uploaded data</span>
+						</div>
+						<div class="button-tile" id="button-tile-old-alloc-upload">
+							<span class="icon-span">N</span><br>
+							<span class="button-title">Previous Allocation</span><br>
+							<span class="button-text">Upload a previously exported allocation run for viewing</span>
+						</div>
+						<input id="fs-alloc-old" type="file" name="files[]" accept=".json" class="fs-hidden"></input>
+					</div>
+					<div class="sub-card" id="sub-card-allocations-2">
+						<div class="button-tile" id="allocations-button-tile-host-inst">
+							<span class="icon-span">B</span><br>
+							<span class="button-title">Partner Institutions</span><br>
+							<span class="button-text">Upload partner data if missing</span>
+						</div>
+						<div class="button-tile" id="allocations-button-tile-students">
+							<span class="icon-span">F</span><br>
+							<span class="button-title">Students</span><br>
+							<span class="button-text">Upload stay wishes if missing</span>
+						</div>
+					</div>
+				</div>
+				<div class="card" id="card-generate-new">
+					<div class="card-content">
+						<p class="card-title">Generate Allocations</p>	
+						<p class="card-text">
+							Before generating allocations, sanity checks will be run on the uploads. If no errors are found, an allocation round will be performed.<br>
+							Remember to export the allocation results before attempting a fresh run. Every run generates unique outcomes and are unlikely to be repeated.<br>
+							<br>Required:<br>
+							<span class="text-checklist">1. Host Institution List </span>[<span class="text-tick text-tick-hide" id="generate-new-tick-host-inst">&#10004;</span>]<br>
+							<span class="text-checklist">2. LU Department Rankings  </span>[<span class="text-tick text-tick-hide" id="generate-new-tick-lu-ranks">&#10004;</span>]<br>
+							<span class="text-checklist">3. Students' Stay Wishes  </span>[<span class="text-tick text-tick-hide" id="generate-new-tick-moveon">&#10004;</span>]<br>
+							<span class="text-checklist">4. LUSI Student Information  </span>[<span class="text-tick text-tick-hide" id="generate-new-tick-lusi">&#10004;</span>]<br>
+							<br><span class="text-choose">Choose an option &#9658;</span>
+						</p>
+					</div>
+					<div class="sub-card" id="sub-card-generate-new">
+						<div class="button-tile" id="button-tile-allocate-now">
+							<span class="icon-span">J</span><br>
+							<span class="button-title">Generate</span><br>
+							<span class="button-text">Validate data and generate a fresh allocation output</span>
+						</div>
+					</div>
+				</div>
+				<div class="card" id="card-alloc-output">
+					<div class="card-content">
+						<p class="card-title">Allocation Outcomes</p>	
+					</div>
+					<div class="sub-card" id="sub-card-alloc-output-1">
+						<div class="results-tile" id="results-student-stats">
+							<span class="button-title">Student Statistics</span><span class="icon-span-2">[ E ]</span><br>
+							<span class="results-header">Heading</span><br>
+							<span class="results-rows"> </span>
+						</div>
+						<div class="results-tile" id="results-hi-stats">
+							<span class="button-title">Partner Statistics</span><span class="icon-span-2">[ E ]</span><br>
+							<span class="results-header">Heading</span><br>
+							<span class="results-rows"> </span>
+						</div>
+					</div>
+					<div class="sub-card" id="sub-card-alloc-output-2">
+						<div class="button-tile" id="alloc-output-button-tile-res-st">
+							<span class="icon-span">F</span><br>
+							<span class="button-title">Students</span><br>
+							<span class="button-text">Detailed results ordered by department and students</span>
+						</div>
+						<div class="button-tile" id="alloc-output-button-tile-res-hi">
+							<span class="icon-span">B</span><br>
+							<span class="button-title">Partner Institutions</span><br>
+							<span class="button-text">Detailed results ordered by partner institution</span>
+						</div>
+						<div class="button-tile" id="alloc-output-button-export">
+							<span class="icon-span">E</span><br>
+							<span class="button-title">Export</span><br>
+							<span class="button-text">Export results for external use</span>
+						</div>
+					</div>
+				</div>
+				<div class="card" id="card-allocation-export">
+					<p class="card-title">Home>Allocations&gt;Export</p>
+				</div>
+				<div class="card" id="card-settings">
+					<p class="card-title">Home>Allocations&gt;Settings TBD</p>
+				</div>
+			</div>		
+		</div>
+	</div>
+	<div class="main-footer">
+		<h6>(C) 2018 Lancaster University</h6>
+	</div>
+</div>
+</body>
+</html>
